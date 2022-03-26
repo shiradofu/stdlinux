@@ -1,3 +1,4 @@
+/* cat made with system calls */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
