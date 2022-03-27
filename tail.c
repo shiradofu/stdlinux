@@ -3,11 +3,10 @@
 #include <getopt.h>
 
 static void do_tail(FILE *f, long nlines);
-static int asc(const void *a, const void *b);
+static unsigned long get_start_byteno(unsigned long *newline_byteno, long nlines, char prev);
 static void help_msg(char *cmd, int code);
 
 #define DEFAULT_N_LINES 10
-#define SIZEOF_ARR(array) (sizeof(array)/sizeof(array[0]))
 
 static struct option longopts[] = {
   {"lines", required_argument, NULL, 'n'},
@@ -71,19 +70,32 @@ do_tail(FILE *f, long nlines)
     prev = c;
   }
   
-  qsort(newline_byteno, SIZEOF_ARR(newline_byteno), sizeof(unsigned long), asc);
-  fseeko(f, prev == '\n' ? newline_byteno[0] : newline_byteno[1], SEEK_SET);
+  fseeko(f, get_start_byteno(newline_byteno, nlines, prev), SEEK_SET);
   while((c = getc(f)) != EOF) {
     if (putchar(c) < 0) exit(1);
   }
 }
 
-static int
-asc(const void *a, const void *b)
+static unsigned long
+get_start_byteno(unsigned long *newline_byteno, long nlines, char prev)
 {
-  int na = *(int*)a;
-  int nb = *(int*)b;
-  return na - nb;
+  long i;
+
+  unsigned long max_idx;
+
+  for (i = 0; i < nlines; i++) {
+    if (newline_byteno[i] < newline_byteno[i + 1]) {
+      max_idx = i + 1;
+    } else {
+      max_idx = i;
+      break;
+    }
+  }
+  if (prev == '\n') {
+    return newline_byteno[(max_idx + 1) % (nlines + 1)];
+  } else {
+    return newline_byteno[(max_idx + 2) % (nlines + 1)];
+  }
 }
 
 static void
