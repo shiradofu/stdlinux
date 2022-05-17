@@ -6,7 +6,6 @@
 #include <errno.h>
 
 static void do_mkdir_p(char *path);
-static void die(const char *s);
 
 int
 main(int argc, char *argv[])
@@ -25,7 +24,6 @@ main(int argc, char *argv[])
 void
 do_mkdir_p(char *path)
 {
-  struct stat st;
   char *p;
   char delim[] = "/";
   char *token = strtok(path, delim);
@@ -36,28 +34,21 @@ do_mkdir_p(char *path)
   }
   while (token != NULL) {
     sprintf(p, "%s%s", p, token);
-    if (lstat(p, &st) < 0) {
-      if (errno != ENOENT || strcmp(p, "") == 0) {
-        die(p);
-      }
-      if (mkdir(p, 0777) < 0) {
-        die(p);
-      }
-    } else {
-      if (!S_ISDIR(st.st_mode)) {
-        fprintf(stderr, "%s already exists and is not directory\n", p);
-        exit(1);
+    if (mkdir(p, 0777) < 0) {
+      if (errno == EEXIST) {
+        struct stat st;
+        if (lstat(p, &st) < 0) {
+          perror(p);
+          exit(1);
+        }
+        if (!S_ISDIR(st.st_mode)) {
+          fprintf(stderr, "%s already exists and is not directory\n", p);
+          exit(1);
+        }
       }
     }
     sprintf(p, "%s%s", p, delim);
     token = strtok(NULL, delim);
   }
   free(p);
-}
-
-static void
-die(const char *s)
-{
-    perror(s);
-    exit(1);
 }
