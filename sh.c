@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 
 #define BUFFER_SIZE 2048
+#define MAX_ARG 10
 
 int
 main(int argc, char *argv[])
@@ -16,35 +18,59 @@ main(int argc, char *argv[])
   }
   for (;;) {
     fprintf(stdout, "> ");
-    fgets(buf, sizeof buf, stdin);
+    fflush(stdout);
+    if (fgets(buf, sizeof buf, stdin) == NULL) {
+      exit(0);
+    }
 
-    /* fgets で取得した文字列の改行を除去 */
+    /* 末尾の空白文字を除去 */
     char *last = buf + strlen(buf) - 1;
-    *last = '\0';
+    while (isspace(*last)) {
+        *last-- = '\0';
+    }
+    /* 先頭の空白文字を除去 */
+    char *start = buf;
+    while (isspace(*start)) {
+      start++;
+    }
 
-    /* 入力をパース */
     int i;
-     /* 引数は 10個まで */
-    char *args[10] = { NULL };
-    char *next;
-    args[0] = buf;
-    for (i = 1; i < 9; i++) {
+    char *args[MAX_ARG + 1] = { NULL }; /* 末尾のNULLのぶん1つ多めに*/
+    args[0] = start;
+    char *next = start + 1;
+    for (i = 1; i < MAX_ARG; i++) {
       /*
        * スペースをNULL文字で塗りつぶし、
        * 最後に塗りつぶしたアドレスの次の
        * アドレスを引数リストに加える
        */
-      next = strrchr(buf, ' ');
-      if (next == NULL) {
-        break;
+      while (!isspace(*next) && *next != '\0') {
+        next++;
       }
-      while (*next == ' ') {
+      while (isspace(*next) && *next != '\0') {
         *next++ = '\0';
       }
       if (*next == '\0') {
         break;
       }
       args[i] = next;
+    }
+
+    if (i == MAX_ARG) {
+      while (!isspace(*next) && *next != '\0') {
+        next++;
+      }
+      while (isspace(*next) && *next != '\0') {
+        *next++ = '\0';
+      }
+      if (*next != '\0') {
+        fprintf(stderr, "Arguments list too long\n");
+        continue;
+      }
+    }
+
+    if (args[0][0] == '\0') {
+      continue;
     }
 
     pid_t pid = fork();
