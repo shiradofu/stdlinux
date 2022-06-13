@@ -150,15 +150,15 @@ main(int argc, char *argv[])
     exit(1);
   } 
 
-  if (do_chroot) {
-    setup_environment(docroot, user, group);
-    docroot = "";
-  }
   install_signal_handlers();
   server_fd = listen_socket(port);
   if (!debug_mode) {
     openlog(SERVER_NAME, LOG_PID|LOG_NDELAY, LOG_DAEMON);
     become_daemon();
+  }
+  if (do_chroot) {
+    setup_environment(docroot, user, group);
+    docroot = "";
   }
   server_main(server_fd, docroot);
   exit(0);
