@@ -551,6 +551,18 @@ do_file_response(struct HTTPRequest *req, FILE *out, char *docroot)
 static char*
 guess_content_type(struct FileInfo *info)
 {
+  char *p;
+
+  p = strrchr(info->path, '.');
+  if (strcmp(p, ".html") == 0) {
+    return "text/html";
+  }
+  if (strcmp(p, ".jpg") == 0 || strcmp(p, ".jpeg") == 0) {
+    return "image/jpeg";
+  }
+  if (strcmp(p, ".png") == 0) {
+    return "image/png";
+  }
   return "text/plain";
 }
 
@@ -650,8 +662,13 @@ build_fspath(char *docroot, char *urlpath)
 {
   char *path;
 
-  path = xmalloc(strlen(docroot) + 1 + strlen(urlpath) + 1);
-  sprintf(path, "%s/%s", docroot, urlpath);
+  if (strcmp(urlpath, "/") == 0) {
+    path = xmalloc(strlen("./index.html") + 1);
+    strcpy(path, "./index.html");
+  } else {
+    path = xmalloc(strlen(docroot) + 1 + strlen(urlpath) + 1);
+    sprintf(path, "%s/%s", docroot, urlpath);
+  }
   return path;
 }
 
